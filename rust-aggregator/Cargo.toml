@@ -1,0 +1,8 @@
+[package]
+name = "rust-aggregator"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+parquet = "56"
+rayon = "1"

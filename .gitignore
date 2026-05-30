@@ -1,0 +1,13 @@
+# .NET build output
+**/bin/
+**/obj/
+
+# Rust build output
+**/target/
+
+# Local IDE/editor state
+.vs/
+**/.vs/
+
+# Generated Parquet data
+*.parquet
