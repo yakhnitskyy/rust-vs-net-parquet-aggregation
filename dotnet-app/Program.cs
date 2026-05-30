@@ -64,7 +64,7 @@ sealed record CliOptions(
     {
         string command = args[0].ToLowerInvariant();
         long rows = AppDefaults.Rows;
-        string path = AppDefaults.FileName;
+        string path = AppPaths.DefaultOrdersPath;
         int rowGroupSize = AppDefaults.RowGroupSize;
 
         for (int i = 1; i < args.Length; i++)

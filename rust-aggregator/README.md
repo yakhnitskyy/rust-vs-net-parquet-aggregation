@@ -13,10 +13,9 @@ cargo build --release
 
 ## Run
 
-By default, the app expects `orders.parquet` to be in the same folder as `rust-aggregator.exe`.
+By default, the app reads `orders.parquet` from the repository root.
 
 ```powershell
-copy ..\orders.parquet .\target\release\orders.parquet
 .\target\release\rust-aggregator.exe
 ```
 
@@ -30,7 +29,7 @@ The app processes Parquet row groups in parallel. To limit or tune CPU usage, se
 
 ```powershell
 $env:RAYON_NUM_THREADS = "8"
-.\target\release\rust-aggregator.exe --path ..\orders.parquet
+.\target\release\rust-aggregator.exe
 ```
 
 ## Output
@@ -44,4 +43,4 @@ The app prints:
 - elapsed time
 - rows per second throughput
 
-This Rust app does not generate test data. Generate `orders.parquet` with the .NET app first, or place an existing compatible Parquet file next to the Rust executable.
+This Rust app does not generate test data. Generate `orders.parquet` in the repository root with the .NET app first, or pass an existing compatible Parquet file with `--path`.

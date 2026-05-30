@@ -47,27 +47,26 @@ cd ..
 Generate the default 100 million rows into the repository root:
 
 ```powershell
-dotnet run --project .\dotnet-app\ParquetPerformance.csproj -c Release -- generate --rows 100000000 --path .\orders.parquet --row-group-size 1000000
+dotnet run --project .\dotnet-app\ParquetPerformance.csproj -c Release -- generate
 ```
 
 For a quick smoke-test file:
 
 ```powershell
-dotnet run --project .\dotnet-app\ParquetPerformance.csproj -c Release -- generate --rows 10000 --path .\test-orders.parquet --row-group-size 2500
+dotnet run --project .\dotnet-app\ParquetPerformance.csproj -c Release -- generate --rows 10000 --row-group-size 2500
 ```
 
 ## Run The .NET Aggregator
 
 ```powershell
-dotnet run --project .\dotnet-app\ParquetPerformance.csproj -c Release -- aggregate --path .\orders.parquet
+dotnet run --project .\dotnet-app\ParquetPerformance.csproj -c Release -- aggregate
 ```
 
 ## Run The Rust Aggregator
 
-The Rust app expects `orders.parquet` in the same folder as `rust-aggregator.exe` when no path is supplied:
+The Rust app reads `orders.parquet` from the repository root when no path is supplied:
 
 ```powershell
-copy .\orders.parquet .\rust-aggregator\target\release\orders.parquet
 .\rust-aggregator\target\release\rust-aggregator.exe
 ```
 
@@ -81,7 +80,7 @@ The Rust app processes row groups in parallel. To tune CPU usage:
 
 ```powershell
 $env:RAYON_NUM_THREADS = "8"
-.\rust-aggregator\target\release\rust-aggregator.exe --path .\orders.parquet
+.\rust-aggregator\target\release\rust-aggregator.exe
 ```
 
 ## Test / Smoke Test
@@ -94,8 +93,8 @@ cd .\rust-aggregator
 cargo build --release
 cargo test
 cd ..
-dotnet run --project .\dotnet-app\ParquetPerformance.csproj -c Release -- generate --rows 10000 --path .\test-orders.parquet --row-group-size 2500
-dotnet run --project .\dotnet-app\ParquetPerformance.csproj -c Release -- aggregate --path .\test-orders.parquet
-.\rust-aggregator\target\release\rust-aggregator.exe --path .\test-orders.parquet
-Remove-Item .\test-orders.parquet
+dotnet run --project .\dotnet-app\ParquetPerformance.csproj -c Release -- generate --rows 10000 --row-group-size 2500
+dotnet run --project .\dotnet-app\ParquetPerformance.csproj -c Release -- aggregate
+.\rust-aggregator\target\release\rust-aggregator.exe
+Remove-Item .\orders.parquet
 ```
