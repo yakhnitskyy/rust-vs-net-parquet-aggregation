@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Buffers;
 using Parquet;
 using Parquet.Schema;
 
@@ -16,6 +17,8 @@ sealed class OrderAggregator
         double[] revenueByRegion = new double[AppDefaults.RegionNames.Length];
         long[] ordersByRegion = new long[AppDefaults.RegionNames.Length];
         long rowsRead = 0;
+        int regionCount = AppDefaults.RegionNames.Length;
+        object mergeLock = new();
 
         Console.WriteLine($"Reading {path}");
         Console.WriteLine($"File size: {DisplayFormatting.FormatBytes(new FileInfo(path).Length)}");
@@ -32,19 +35,49 @@ sealed class OrderAggregator
             using ParquetRowGroupReader rowGroupReader = reader.OpenRowGroupReader(groupIndex);
             int rowCount = checked((int)rowGroupReader.RowCount);
 
-            int[] quantities = new int[rowCount];
-            double[] unitPrices = new double[rowCount];
-            byte[] regionIds = new byte[rowCount];
+            int[] quantities = ArrayPool<int>.Shared.Rent(rowCount);
+            double[] unitPrices = ArrayPool<double>.Shared.Rent(rowCount);
+            byte[] regionIds = ArrayPool<byte>.Shared.Rent(rowCount);
 
-            await rowGroupReader.ReadAsync<int>(quantityField, quantities);
-            await rowGroupReader.ReadAsync<double>(unitPriceField, unitPrices);
-            await rowGroupReader.ReadAsync<byte>(regionIdField, regionIds);
-
-            for (int i = 0; i < rowCount; i++)
+            try
             {
-                int region = regionIds[i] % AppDefaults.RegionNames.Length;
-                ordersByRegion[region]++;
-                revenueByRegion[region] += quantities[i] * unitPrices[i];
+                await rowGroupReader.ReadAsync<int>(quantityField, quantities);
+                await rowGroupReader.ReadAsync<double>(unitPriceField, unitPrices);
+                await rowGroupReader.ReadAsync<byte>(regionIdField, regionIds);
+
+                Parallel.For(
+                    fromInclusive: 0,
+                    toExclusive: rowCount,
+                    localInit: () => new RegionTotals(regionCount),
+                    body: (i, _, local) =>
+                    {
+                        int region = regionIds[i];
+                        if ((uint)region >= (uint)regionCount)
+                        {
+                            region %= regionCount;
+                        }
+
+                        local.Orders[region]++;
+                        local.Revenue[region] += quantities[i] * unitPrices[i];
+                        return local;
+                    },
+                    localFinally: local =>
+                    {
+                        lock (mergeLock)
+                        {
+                            for (int i = 0; i < regionCount; i++)
+                            {
+                                ordersByRegion[i] += local.Orders[i];
+                                revenueByRegion[i] += local.Revenue[i];
+                            }
+                        }
+                    });
+            }
+            finally
+            {
+                ArrayPool<int>.Shared.Return(quantities, clearArray: false);
+                ArrayPool<double>.Shared.Return(unitPrices, clearArray: false);
+                ArrayPool<byte>.Shared.Return(regionIds, clearArray: false);
             }
 
             rowsRead += rowCount;
@@ -74,5 +107,18 @@ sealed class OrderAggregator
         Console.WriteLine($"Processed {rowsRead:N0} rows in {stopwatch.Elapsed}");
         Console.WriteLine($"Throughput: {rowsRead / Math.Max(stopwatch.Elapsed.TotalSeconds, 0.001):N0} rows/sec");
         return 0;
+    }
+
+    private sealed class RegionTotals
+    {
+        public RegionTotals(int regionCount)
+        {
+            Orders = new long[regionCount];
+            Revenue = new double[regionCount];
+        }
+
+        public long[] Orders { get; }
+
+        public double[] Revenue { get; }
     }
 }
