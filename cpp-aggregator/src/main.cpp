@@ -8,10 +8,13 @@
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <mutex>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <thread>
+#include <atomic>
 #include <vector>
 
 #include <arrow/api.h>
@@ -32,6 +35,11 @@ struct Aggregation {
     std::array<std::uint64_t, kRegionNames.size()> orders_by_region{};
     std::array<double, kRegionNames.size()> revenue_by_region{};
     std::uint64_t rows_read = 0;
+};
+
+struct RowGroupResult {
+    Aggregation aggregation;
+    std::chrono::steady_clock::duration elapsed{};
 };
 
 void PrintUsage() {
@@ -246,19 +254,16 @@ std::vector<NativeType> ReadChunkedValues(const std::shared_ptr<arrow::ChunkedAr
     return output;
 }
 
-void AggregateRowGroup(parquet::arrow::FileReader* reader,
-                       int row_group,
-                       int quantity_index,
-                       int unit_price_index,
-                       int region_id_index,
-                       Aggregation& aggregation) {
-    std::shared_ptr<arrow::Table> table;
-    std::vector<int> columns{quantity_index, unit_price_index, region_id_index};
-    EnsureOk(reader->ReadRowGroup(row_group, columns, &table), "Failed to read row group");
+Aggregation AggregateRowGroup(parquet::arrow::FileReader* reader,
+                              int row_group,
+                              const std::vector<int>& columns) {
+    auto table = ValueOrThrow(reader->ReadRowGroup(row_group, columns), "Failed to read row group");
 
     auto quantities_chunked = table->column(0);
     auto unit_prices_chunked = table->column(1);
     auto regions_chunked = table->column(2);
+
+    Aggregation aggregation;
 
     auto quantities = ReadChunkedValues<arrow::Int32Array, std::int32_t>(
         quantities_chunked, arrow::Type::INT32, "Quantity");
@@ -303,7 +308,76 @@ void AggregateRowGroup(parquet::arrow::FileReader* reader,
         throw std::runtime_error("Unsupported RegionId type");
     }
 
-    aggregation.rows_read += static_cast<std::uint64_t>(row_count);
+    aggregation.rows_read = static_cast<std::uint64_t>(row_count);
+    return aggregation;
+}
+
+void MergeAggregation(Aggregation& total, const Aggregation& row_group) {
+    total.rows_read += row_group.rows_read;
+    for (std::size_t i = 0; i < kRegionNames.size(); ++i) {
+        total.orders_by_region[i] += row_group.orders_by_region[i];
+        total.revenue_by_region[i] += row_group.revenue_by_region[i];
+    }
+}
+
+std::vector<RowGroupResult> AggregateAllRowGroupsInParallel(
+    const std::string& path,
+    int row_group_count,
+    int quantity_index,
+    int unit_price_index,
+    int region_id_index,
+    const std::chrono::steady_clock::time_point started) {
+    std::vector<RowGroupResult> results(static_cast<std::size_t>(row_group_count));
+    std::atomic<int> next_row_group{0};
+    std::atomic<bool> has_error{false};
+    std::mutex error_mutex;
+    std::string error_message;
+
+    const unsigned int suggested = std::max(1u, std::thread::hardware_concurrency());
+    const int worker_count = std::max(1, std::min(row_group_count, static_cast<int>(suggested)));
+
+    std::vector<std::thread> workers;
+    workers.reserve(static_cast<std::size_t>(worker_count));
+    for (int worker_id = 0; worker_id < worker_count; ++worker_id) {
+        (void)worker_id;
+        workers.emplace_back([&]() {
+            try {
+                auto input = ValueOrThrow(arrow::io::ReadableFile::Open(path), "Failed to open file");
+                auto reader = ValueOrThrow(
+                    parquet::arrow::OpenFile(input, arrow::default_memory_pool()),
+                    "Failed to create Parquet reader");
+                const std::vector<int> columns{quantity_index, unit_price_index, region_id_index};
+
+                while (!has_error.load(std::memory_order_relaxed)) {
+                    const int row_group = next_row_group.fetch_add(1, std::memory_order_relaxed);
+                    if (row_group >= row_group_count) {
+                        break;
+                    }
+
+                    RowGroupResult result;
+                    result.aggregation = AggregateRowGroup(reader.get(), row_group, columns);
+                    result.elapsed = std::chrono::steady_clock::now() - started;
+                    results[static_cast<std::size_t>(row_group)] = std::move(result);
+                }
+            } catch (const std::exception& ex) {
+                has_error.store(true, std::memory_order_relaxed);
+                std::lock_guard<std::mutex> lock(error_mutex);
+                if (error_message.empty()) {
+                    error_message = ex.what();
+                }
+            }
+        });
+    }
+
+    for (auto& worker : workers) {
+        worker.join();
+    }
+
+    if (!error_message.empty()) {
+        throw std::runtime_error(error_message);
+    }
+
+    return results;
 }
 
 }  // namespace
@@ -335,17 +409,25 @@ int main(int argc, char** argv) {
         const int region_id_index = FindColumnIndex(schema, "RegionId");
 
         const int row_group_count = reader->num_row_groups();
-        Aggregation aggregation;
 
         const auto started = std::chrono::steady_clock::now();
-        for (int row_group = 0; row_group < row_group_count; ++row_group) {
-            AggregateRowGroup(
-                reader.get(), row_group, quantity_index, unit_price_index, region_id_index, aggregation);
+        auto row_group_results = AggregateAllRowGroupsInParallel(
+            full_path.string(),
+            row_group_count,
+            quantity_index,
+            unit_price_index,
+            region_id_index,
+            started);
 
-            const auto elapsed = std::chrono::steady_clock::now() - started;
+        Aggregation aggregation;
+        auto last_elapsed = std::chrono::steady_clock::duration::zero();
+        for (int row_group = 0; row_group < row_group_count; ++row_group) {
+            const auto& result = row_group_results[static_cast<std::size_t>(row_group)];
+            MergeAggregation(aggregation, result.aggregation);
+            last_elapsed = std::max(last_elapsed, result.elapsed);
             std::cout << "Row group " << FormatCount(static_cast<std::uint64_t>(row_group + 1)) << '/'
                       << FormatCount(static_cast<std::uint64_t>(row_group_count)) << ": processed "
-                      << FormatCount(aggregation.rows_read) << " rows in " << FormatElapsed(elapsed)
+                      << FormatCount(aggregation.rows_read) << " rows in " << FormatElapsed(last_elapsed)
                       << '\n';
         }
 
