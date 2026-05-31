@@ -1,11 +1,12 @@
 # Parquet Performance
 
-This repository contains two console apps that work with the same local Parquet orders file.
+This repository contains three console apps that work with the same local Parquet orders file.
 
 - `dotnet-app`: .NET 10 app that can generate fake orders and aggregate them.
 - `rust-aggregator`: Rust app that only aggregates an existing Parquet file.
+- `cpp-aggregator`: C++ app that only aggregates an existing Parquet file.
 
-Both aggregators read `Quantity`, `UnitPrice`, and `RegionId`, then print:
+All aggregators read `Quantity`, `UnitPrice`, and `RegionId`, then print:
 
 - file path and file size
 - row-group processing progress
@@ -41,6 +42,15 @@ cd .\rust-aggregator
 cargo build --release
 cd ..
 ```
+
+Build the C++ app:
+
+```powershell
+.\build-cpp-aggregator.ps1
+```
+
+The script uses `cpp-aggregator\vcpkg.json` to install Arrow + Parquet through vcpkg, then builds with CMake.
+If needed, force a generator explicitly, for example: `./build-cpp-aggregator.ps1 -Generator "MinGW Makefiles"`.
 
 ## Generate Data With .NET
 
@@ -83,9 +93,23 @@ $env:RAYON_NUM_THREADS = "8"
 .\rust-aggregator\target\release\rust-aggregator.exe
 ```
 
+## Run The C++ Aggregator
+
+The C++ app reads `orders.parquet` from the repository root when no path is supplied:
+
+```powershell
+.\cpp-aggregator\build\cpp-aggregator.exe
+```
+
+You can also pass a file path explicitly:
+
+```powershell
+.\cpp-aggregator\build\cpp-aggregator.exe --path .\orders.parquet
+```
+
 ## Test / Smoke Test
 
-There are no dedicated unit test projects yet. Use these commands to verify both apps end to end with a small Parquet file:
+There are no dedicated unit test projects yet. Use these commands to verify all apps end to end with a small Parquet file:
 
 ```powershell
 dotnet build .\dotnet-app\ParquetPerformance.csproj -c Release
@@ -93,8 +117,10 @@ cd .\rust-aggregator
 cargo build --release
 cargo test
 cd ..
+.\build-cpp-aggregator.ps1
 dotnet run --project .\dotnet-app\ParquetPerformance.csproj -c Release -- generate --rows 10000 --row-group-size 2500
 dotnet run --project .\dotnet-app\ParquetPerformance.csproj -c Release -- aggregate
 .\rust-aggregator\target\release\rust-aggregator.exe
+.\cpp-aggregator\build\cpp-aggregator.exe
 Remove-Item .\orders.parquet
 ```

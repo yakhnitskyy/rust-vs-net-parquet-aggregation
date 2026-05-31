@@ -5,6 +5,30 @@
 # Rust build output
 **/target/
 
+# C++/CMake build output
+**/build/
+**/CMakeFiles/
+**/CMakeCache.txt
+**/cmake_install.cmake
+**/compile_commands.json
+**/Testing/
+
+# C++ binaries/artifacts
+**/*.exe
+**/*.dll
+**/*.lib
+**/*.a
+**/*.obj
+**/*.o
+**/*.pdb
+**/*.exp
+**/*.ilk
+
+# Local vcpkg clone/cache used by build script
+.vcpkg/
+**/vcpkg_installed/
+**/vcpkg-manifest-install.log
+
 # Local IDE/editor state
 .vs/
 **/.vs/
