@@ -1,6 +1,6 @@
 # Parquet Performance
 
-This repository contains six console apps that work with the same local Parquet orders file.
+This repository contains six console apps and one browser app that work with the same Parquet orders format.
 
 - `dotnet-app`: .NET 10 app that can generate fake orders and aggregate them.
 - `dotnet-duckdb`: .NET 10 app that aggregates with the DuckDB engine.
@@ -8,6 +8,7 @@ This repository contains six console apps that work with the same local Parquet 
 - `cpp-aggregator`: C++ app that only aggregates an existing Parquet file.
 - `node-aggregator`: Node.js 24+ app that only aggregates an existing Parquet file.
 - `python-aggregator`: Python app that aggregates with the Polars engine.
+- `web-aggregator`: Browser app that aggregates an uploaded Parquet file with DuckDB-WASM.
 
 All aggregators read `Quantity`, `UnitPrice`, and `RegionId`, then print:
 
@@ -76,6 +77,14 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r .\python-aggregator\requirements.txt
 ```
+
+Run the browser app locally:
+
+```powershell
+python -m http.server 8080 --directory .\web-aggregator
+```
+
+Then open `http://localhost:8080`.
 
 ## Generate Data With .NET
 
@@ -177,6 +186,16 @@ You can also pass a file path explicitly:
 ```powershell
 python .\python-aggregator\src\main.py --path .\data\orders.parquet
 ```
+
+## Run The Browser DuckDB-WASM Aggregator
+
+Start a local static server from the repository root:
+
+```powershell
+python -m http.server 8080 --directory .\web-aggregator
+```
+
+Then open `http://localhost:8080`, upload a parquet file, and click **Aggregate File**.
 
 ## Test / Smoke Test
 

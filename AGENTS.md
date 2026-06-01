@@ -3,6 +3,7 @@
 ## What This Repo Is
 - Five console apps operate on the same Parquet dataset: `dotnet-app`, `rust-aggregator`, `cpp-aggregator`, `node-aggregator`, `python-aggregator`.
 - Shared default data path is `{repo-root}\data\orders.parquet` when `--path` is omitted.
+- One browser app (`web-aggregator`) processes an uploaded Parquet file with DuckDB-WASM.
 
 ## High-Value Entry Points
 - `.NET`: `dotnet-app/Program.cs` (`generate` and `aggregate` commands).
@@ -10,6 +11,7 @@
 - `C++`: `cpp-aggregator/src/main.cpp` (aggregate-only).
 - `Node.js`: `node-aggregator/src/main.mjs` (aggregate-only, DuckDB-based).
 - `Python`: `python-aggregator/src/main.py` (aggregate-only, Polars-based).
+- `Browser`: `web-aggregator/index.html` + `web-aggregator/app.js` (upload + aggregate, DuckDB-WASM-based).
 
 ## Exact Commands (Verified)
 - Build .NET: `dotnet build .\dotnet-app\ParquetPerformance.csproj -c Release`
@@ -22,6 +24,7 @@
 - Run Node aggregator: run in `node-aggregator` -> `npm run aggregate`
 - Install Python deps: run from repo root -> `python -m pip install -r .\python-aggregator\requirements.txt`
 - Run Python aggregator: run from repo root -> `python .\python-aggregator\src\main.py`
+- Run browser aggregator: run from repo root -> `python -m http.server 8080 --directory .\web-aggregator` then open `http://localhost:8080`
 
 ## Build/Test Order That Avoids Mistakes
 - If you need end-to-end verification, generate data first with .NET, then run aggregators (`.NET`, `Rust`, `C++`, `Node`, `Python`).
