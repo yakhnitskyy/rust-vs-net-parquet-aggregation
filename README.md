@@ -1,8 +1,9 @@
 # Parquet Performance
 
-This repository contains four console apps that work with the same local Parquet orders file.
+This repository contains five console apps that work with the same local Parquet orders file.
 
 - `dotnet-app`: .NET 10 app that can generate fake orders and aggregate them.
+- `dotnet-duckdb`: .NET 10 app that aggregates with the DuckDB engine.
 - `rust-aggregator`: Rust app that only aggregates an existing Parquet file.
 - `cpp-aggregator`: C++ app that only aggregates an existing Parquet file.
 - `node-aggregator`: Node.js 24+ app that only aggregates an existing Parquet file.
@@ -34,6 +35,12 @@ Build the .NET app:
 
 ```powershell
 dotnet build .\dotnet-app\ParquetPerformance.csproj -c Release
+```
+
+Build the .NET DuckDB app:
+
+```powershell
+dotnet build .\dotnet-duckdb\dotnet-duckdb.csproj -c Release
 ```
 
 Build the Rust app:
@@ -79,6 +86,20 @@ dotnet run --project .\dotnet-app\ParquetPerformance.csproj -c Release -- genera
 
 ```powershell
 dotnet run --project .\dotnet-app\ParquetPerformance.csproj -c Release -- aggregate
+```
+
+## Run The .NET DuckDB Aggregator
+
+The .NET DuckDB app reads `data\orders.parquet` from the repository root when no path is supplied:
+
+```powershell
+dotnet run --project .\dotnet-duckdb\dotnet-duckdb.csproj -c Release
+```
+
+You can also pass a file path explicitly:
+
+```powershell
+dotnet run --project .\dotnet-duckdb\dotnet-duckdb.csproj -c Release -- --path .\data\orders.parquet
 ```
 
 ## Run The Rust Aggregator
@@ -140,6 +161,7 @@ There are no dedicated unit test projects yet. Use these commands to verify all 
 
 ```powershell
 dotnet build .\dotnet-app\ParquetPerformance.csproj -c Release
+dotnet build .\dotnet-duckdb\dotnet-duckdb.csproj -c Release
 cd .\rust-aggregator
 cargo build --release
 cargo test
@@ -150,6 +172,7 @@ npm install
 cd ..
 dotnet run --project .\dotnet-app\ParquetPerformance.csproj -c Release -- generate --rows 10000 --row-group-size 2500
 dotnet run --project .\dotnet-app\ParquetPerformance.csproj -c Release -- aggregate
+dotnet run --project .\dotnet-duckdb\dotnet-duckdb.csproj -c Release
 .\rust-aggregator\target\release\rust-aggregator.exe
 .\cpp-aggregator\build\cpp-aggregator.exe
 cd .\node-aggregator
