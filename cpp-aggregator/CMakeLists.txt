@@ -9,7 +9,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 find_package(Arrow CONFIG REQUIRED)
 find_package(Parquet CONFIG REQUIRED)
 
-add_executable(cpp-aggregator src/main.cpp)
+add_executable(cpp-aggregator src/main.cpp
+        src/main.cpp)
 
 target_compile_features(cpp-aggregator PRIVATE cxx_std_23)
 

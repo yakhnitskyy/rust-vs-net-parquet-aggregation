@@ -40,8 +40,8 @@ static void PrintUsage()
         ParquetPerformance
 
         Usage:
-          dotnet run -c Release -- generate [--rows 100000000] [--path orders.parquet] [--row-group-size 1000000]
-          dotnet run -c Release -- aggregate [--path orders.parquet]
+          dotnet run -c Release -- generate [--rows 100000000] [--path .\data\orders.parquet] [--row-group-size 1000000]
+          dotnet run -c Release -- aggregate [--path .\data\orders.parquet]
 
         Commands:
           generate    Create deterministic fake orders and write them to a local Parquet file.
@@ -49,7 +49,7 @@ static void PrintUsage()
 
         Options:
           --rows            Number of fake rows to generate. Defaults to 100,000,000.
-          --path            Parquet file path. Defaults to orders.parquet in the current folder.
+          --path            Parquet file path. Defaults to .\data\orders.parquet in the repository root.
           --row-group-size  Rows per Parquet row group during generation. Defaults to 1,000,000.
         """);
 }

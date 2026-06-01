@@ -1,7 +1,7 @@
 static class AppPaths
 {
     public static string DefaultOrdersPath =>
-        Path.Combine(FindRepositoryRoot(), AppDefaults.FileName);
+        Path.Combine(FindRepositoryRoot(), "data", AppDefaults.FileName);
 
     private static string FindRepositoryRoot()
     {

@@ -24,6 +24,7 @@
 namespace {
 
 constexpr std::string_view kDefaultFileName = "orders.parquet";
+constexpr std::string_view kDefaultDataDirectory = "data";
 constexpr std::array<std::string_view, 6> kRegionNames{
     "North", "South", "East", "West", "Central", "Online"};
 
@@ -47,7 +48,7 @@ void PrintUsage() {
               << "Usage:\n"
               << "  cpp-aggregator.exe\n"
               << "  cpp-aggregator.exe --path C:\\path\\to\\orders.parquet\n\n"
-              << "When --path is omitted, the app reads orders.parquet from the repository root.\n";
+              << "When --path is omitted, the app reads .\\data\\orders.parquet from the repository root.\n";
 }
 
 [[noreturn]] void ThrowStatus(const arrow::Status& status, std::string_view context) {
@@ -87,7 +88,9 @@ std::filesystem::path ResolveRepositoryRoot() {
 
 CliOptions ParseOptions(int argc, char** argv) {
     if (argc == 1) {
-        return CliOptions{ResolveRepositoryRoot() / kDefaultFileName};
+        return CliOptions{ResolveRepositoryRoot() /
+                          std::filesystem::path(kDefaultDataDirectory) /
+                          std::filesystem::path(kDefaultFileName)};
     }
 
     std::string_view first = argv[1];

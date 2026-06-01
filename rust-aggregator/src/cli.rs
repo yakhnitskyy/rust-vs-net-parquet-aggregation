@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 pub fn resolve_input_path() -> AppResult<PathBuf> {
     let mut args = env::args().skip(1);
     let Some(first) = args.next() else {
-        return repository_root().map(|directory| directory.join(DEFAULT_FILE_NAME));
+        return repository_root().map(|directory| directory.join("data").join(DEFAULT_FILE_NAME));
     };
 
     match first.as_str() {
@@ -52,7 +52,7 @@ Usage:
   rust-aggregator.exe
   rust-aggregator.exe --path C:\path\to\orders.parquet
 
-When --path is omitted, the app reads orders.parquet from the repository root.
+When --path is omitted, the app reads .\data\orders.parquet from the repository root.
 "#
     );
 }

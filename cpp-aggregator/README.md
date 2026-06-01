@@ -47,7 +47,7 @@ If auto-detection picks a generator that does not work on your machine, use `-Ge
 
 ## Run
 
-By default, the app reads `orders.parquet` from the repository root:
+By default, the app reads `data\orders.parquet` from the repository root:
 
 ```powershell
 .\cpp-aggregator\build\cpp-aggregator.exe
@@ -56,7 +56,7 @@ By default, the app reads `orders.parquet` from the repository root:
 You can also pass the Parquet file path explicitly:
 
 ```powershell
-.\cpp-aggregator\build\cpp-aggregator.exe --path .\orders.parquet
+.\cpp-aggregator\build\cpp-aggregator.exe --path .\data\orders.parquet
 ```
 
 ## Output
