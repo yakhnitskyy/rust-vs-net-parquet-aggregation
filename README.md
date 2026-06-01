@@ -1,15 +1,16 @@
 # Parquet Performance
 
-This repository contains three console apps that work with the same local Parquet orders file.
+This repository contains four console apps that work with the same local Parquet orders file.
 
 - `dotnet-app`: .NET 10 app that can generate fake orders and aggregate them.
 - `rust-aggregator`: Rust app that only aggregates an existing Parquet file.
 - `cpp-aggregator`: C++ app that only aggregates an existing Parquet file.
+- `node-aggregator`: Node.js 24+ app that only aggregates an existing Parquet file.
 
 All aggregators read `Quantity`, `UnitPrice`, and `RegionId`, then print:
 
 - file path and file size
-- row-group processing progress
+- row-group processing progress (or row-group metadata)
 - order count and revenue by region
 - total rows processed
 - elapsed time
@@ -52,9 +53,17 @@ Build the C++ app:
 The script uses `cpp-aggregator\vcpkg.json` to install Arrow + Parquet through vcpkg, then builds with CMake.
 If needed, force a generator explicitly, for example: `./build-cpp-aggregator.ps1 -Generator "MinGW Makefiles"`.
 
+Install Node.js dependencies:
+
+```powershell
+cd .\node-aggregator
+npm install
+cd ..
+```
+
 ## Generate Data With .NET
 
-Generate the default 100 million rows into the repository root:
+Generate the default 100 million rows into `data\orders.parquet` under the repository root:
 
 ```powershell
 dotnet run --project .\dotnet-app\ParquetPerformance.csproj -c Release -- generate
@@ -74,7 +83,7 @@ dotnet run --project .\dotnet-app\ParquetPerformance.csproj -c Release -- aggreg
 
 ## Run The Rust Aggregator
 
-The Rust app reads `orders.parquet` from the repository root when no path is supplied:
+The Rust app reads `data\orders.parquet` from the repository root when no path is supplied:
 
 ```powershell
 .\rust-aggregator\target\release\rust-aggregator.exe
@@ -83,7 +92,7 @@ The Rust app reads `orders.parquet` from the repository root when no path is sup
 You can also pass a file path explicitly:
 
 ```powershell
-.\rust-aggregator\target\release\rust-aggregator.exe --path .\orders.parquet
+.\rust-aggregator\target\release\rust-aggregator.exe --path .\data\orders.parquet
 ```
 
 The Rust app processes row groups in parallel. To tune CPU usage:
@@ -95,7 +104,7 @@ $env:RAYON_NUM_THREADS = "8"
 
 ## Run The C++ Aggregator
 
-The C++ app reads `orders.parquet` from the repository root when no path is supplied:
+The C++ app reads `data\orders.parquet` from the repository root when no path is supplied:
 
 ```powershell
 .\cpp-aggregator\build\cpp-aggregator.exe
@@ -104,7 +113,25 @@ The C++ app reads `orders.parquet` from the repository root when no path is supp
 You can also pass a file path explicitly:
 
 ```powershell
-.\cpp-aggregator\build\cpp-aggregator.exe --path .\orders.parquet
+.\cpp-aggregator\build\cpp-aggregator.exe --path .\data\orders.parquet
+```
+
+## Run The Node.js Aggregator
+
+The Node.js app reads `data\orders.parquet` from the repository root when no path is supplied:
+
+```powershell
+cd .\node-aggregator
+npm run aggregate
+cd ..
+```
+
+You can also pass a file path explicitly:
+
+```powershell
+cd .\node-aggregator
+node .\src\main.mjs --path ..\data\orders.parquet
+cd ..
 ```
 
 ## Test / Smoke Test
@@ -118,9 +145,15 @@ cargo build --release
 cargo test
 cd ..
 .\build-cpp-aggregator.ps1
+cd .\node-aggregator
+npm install
+cd ..
 dotnet run --project .\dotnet-app\ParquetPerformance.csproj -c Release -- generate --rows 10000 --row-group-size 2500
 dotnet run --project .\dotnet-app\ParquetPerformance.csproj -c Release -- aggregate
 .\rust-aggregator\target\release\rust-aggregator.exe
 .\cpp-aggregator\build\cpp-aggregator.exe
-Remove-Item .\orders.parquet
+cd .\node-aggregator
+npm run aggregate
+cd ..
+Remove-Item .\data\orders.parquet
 ```
