@@ -33,5 +33,9 @@
 .vs/
 **/.vs/
 
+# Node.js build output
+**/node_modules/
+**/.npm/
+
 # Generated Parquet data
 *.parquet

@@ -1,0 +1,17 @@
+{
+  "name": "node-aggregator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "High-performance Node.js Parquet aggregator",
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "start": "node ./src/main.mjs",
+    "aggregate": "node ./src/main.mjs"
+  },
+  "dependencies": {
+    "@duckdb/node-api": "^1.5.3-r.3"
+  }
+}
