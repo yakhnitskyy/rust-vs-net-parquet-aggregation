@@ -37,5 +37,10 @@
 **/node_modules/
 **/.npm/
 
+# Python local environment/cache
+**/.venv/
+**/__pycache__/
+**/*.pyc
+
 # Generated Parquet data
 *.parquet

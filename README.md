@@ -1,12 +1,13 @@
 # Parquet Performance
 
-This repository contains five console apps that work with the same local Parquet orders file.
+This repository contains six console apps that work with the same local Parquet orders file.
 
 - `dotnet-app`: .NET 10 app that can generate fake orders and aggregate them.
 - `dotnet-duckdb`: .NET 10 app that aggregates with the DuckDB engine.
 - `rust-aggregator`: Rust app that only aggregates an existing Parquet file.
 - `cpp-aggregator`: C++ app that only aggregates an existing Parquet file.
 - `node-aggregator`: Node.js 24+ app that only aggregates an existing Parquet file.
+- `python-aggregator`: Python app that aggregates with the Polars engine.
 
 All aggregators read `Quantity`, `UnitPrice`, and `RegionId`, then print:
 
@@ -66,6 +67,14 @@ Install Node.js dependencies:
 cd .\node-aggregator
 npm install
 cd ..
+```
+
+Install Python dependencies:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r .\python-aggregator\requirements.txt
 ```
 
 ## Generate Data With .NET
@@ -155,6 +164,20 @@ node .\src\main.mjs --path ..\data\orders.parquet
 cd ..
 ```
 
+## Run The Python Polars Aggregator
+
+The Python app reads `data\orders.parquet` from the repository root when no path is supplied:
+
+```powershell
+python .\python-aggregator\src\main.py
+```
+
+You can also pass a file path explicitly:
+
+```powershell
+python .\python-aggregator\src\main.py --path .\data\orders.parquet
+```
+
 ## Test / Smoke Test
 
 There are no dedicated unit test projects yet. Use these commands to verify all apps end to end with a small Parquet file:
@@ -170,6 +193,9 @@ cd ..
 cd .\node-aggregator
 npm install
 cd ..
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r .\python-aggregator\requirements.txt
 dotnet run --project .\dotnet-app\ParquetPerformance.csproj -c Release -- generate --rows 10000 --row-group-size 2500
 dotnet run --project .\dotnet-app\ParquetPerformance.csproj -c Release -- aggregate
 dotnet run --project .\dotnet-duckdb\dotnet-duckdb.csproj -c Release
@@ -178,5 +204,6 @@ dotnet run --project .\dotnet-duckdb\dotnet-duckdb.csproj -c Release
 cd .\node-aggregator
 npm run aggregate
 cd ..
+python .\python-aggregator\src\main.py
 Remove-Item .\data\orders.parquet
 ```
