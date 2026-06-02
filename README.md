@@ -1,13 +1,15 @@
 # Parquet Performance
 
-This repository contains six console apps that work with the same local Parquet orders file.
+This repository contains seven console apps and one browser app that work with the same local Parquet orders file.
 
 - `dotnet-app`: .NET 10 app that can generate fake orders and aggregate them.
 - `dotnet-duckdb`: .NET 10 app that aggregates with the DuckDB engine.
 - `rust-aggregator`: Rust app that only aggregates an existing Parquet file.
 - `cpp-aggregator`: C++ app that only aggregates an existing Parquet file.
 - `node-aggregator`: Node.js 24+ app that only aggregates an existing Parquet file.
-- `clickhouse-aggregator`: .NET 10 app that starts ClickHouse in Docker, loads a temporary table, and does aggregation within clickhouse
+- `clickhouse-aggregator`: .NET 10 app that starts ClickHouse in Docker, loads a temporary table, and aggregates.
+- `python-aggregator`: Python app that aggregates with the Polars engine.
+- `web-aggregator`: Browser app that aggregates an uploaded Parquet file with DuckDB-WASM.
 
 All aggregators read `Quantity`, `UnitPrice`, and `RegionId`, then print:
 
@@ -75,6 +77,21 @@ Build the ClickHouse .NET app:
 dotnet build .\clickhouse-aggregator\ClickHouseAggregator.csproj -c Release
 ```
 
+Install Python dependencies:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r .\python-aggregator\requirements.txt
+```
+
+Run the browser app locally:
+
+```powershell
+python -m http.server 8080 --directory .\web-aggregator
+```
+
+Then open `http://localhost:8080`.
 ## Generate Data With .NET
 
 Generate the default 100 million rows into `data\orders.parquet` under the repository root:

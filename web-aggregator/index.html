@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Parquet Browser Aggregator</title>
+    <style>
+      :root {
+        --bg: #f4f2ee;
+        --card: #fffefc;
+        --ink: #1d2a35;
+        --muted: #596876;
+        --line: #d9d5ce;
+        --accent: #0f766e;
+        --accent-soft: #d4f4ef;
+        --ok: #0b7a46;
+        --warn: #8c5b00;
+        --danger: #a11a1a;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 15% 10%, #d8f1ea 0%, transparent 45%),
+          radial-gradient(circle at 85% 25%, #ffe6c8 0%, transparent 35%),
+          var(--bg);
+        padding: 28px 16px 40px;
+      }
+
+      .wrap {
+        max-width: 940px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-family: "Space Grotesk", "IBM Plex Sans", sans-serif;
+        font-size: clamp(1.7rem, 2.7vw, 2.2rem);
+      }
+
+      .subtitle {
+        margin: 0 0 18px;
+        color: var(--muted);
+      }
+
+      .card {
+        background: color-mix(in oklab, var(--card) 92%, white 8%);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 18px;
+        box-shadow: 0 10px 32px rgba(23, 35, 48, 0.08);
+      }
+
+      .uploader {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+      }
+
+      input[type="file"] {
+        max-width: 100%;
+        background: var(--accent-soft);
+        border: 1px dashed #96d7cc;
+        border-radius: 10px;
+        padding: 10px;
+      }
+
+      button {
+        border: 0;
+        background: var(--accent);
+        color: #fff;
+        border-radius: 10px;
+        padding: 10px 16px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      button:disabled {
+        cursor: progress;
+        opacity: 0.65;
+      }
+
+      #status {
+        margin-top: 14px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: #eef4f8;
+        color: #2b3b4d;
+      }
+
+      #status.success {
+        background: #e8f7ef;
+        color: var(--ok);
+      }
+
+      #status.error {
+        background: #fdeaea;
+        color: var(--danger);
+      }
+
+      #status.working {
+        background: #fff4df;
+        color: var(--warn);
+      }
+
+      .meta {
+        margin-top: 16px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 10px;
+      }
+
+      .pill {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #fff;
+        padding: 10px;
+      }
+
+      .pill .k {
+        display: block;
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+
+      .pill .v {
+        font-family: "IBM Plex Mono", Consolas, monospace;
+        font-size: 0.96rem;
+        margin-top: 4px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 16px;
+        background: white;
+        border: 1px solid var(--line);
+      }
+
+      th,
+      td {
+        text-align: left;
+        padding: 10px;
+        border-bottom: 1px solid #ece8e2;
+      }
+
+      th {
+        background: #f8f5f0;
+        font-family: "Space Grotesk", "IBM Plex Sans", sans-serif;
+        letter-spacing: 0.02em;
+      }
+
+      td.num {
+        text-align: right;
+        font-family: "IBM Plex Mono", Consolas, monospace;
+      }
+
+      tr.total {
+        font-weight: 700;
+        background: #f0fbf8;
+      }
+
+      .footnote {
+        color: var(--muted);
+        margin-top: 12px;
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <h1>Browser Parquet Aggregator</h1>
+      <p class="subtitle">Upload an <code>orders.parquet</code>-compatible file and aggregate in-browser with DuckDB-WASM.</p>
+
+      <section class="card">
+        <div class="uploader">
+          <input id="fileInput" type="file" accept=".parquet,application/octet-stream" />
+          <button id="runButton" type="button">Aggregate File</button>
+        </div>
+
+        <div id="status">Ready. Select a Parquet file and run aggregation.</div>
+
+        <div class="meta" id="meta"></div>
+        <div id="results"></div>
+        <p class="footnote">Expected columns: <code>Quantity</code>, <code>UnitPrice</code>, and <code>RegionId</code>.</p>
+      </section>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
