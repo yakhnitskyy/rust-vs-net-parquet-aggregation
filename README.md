@@ -1,12 +1,13 @@
 # Parquet Performance
 
-This repository contains five console apps that work with the same local Parquet orders file.
+This repository contains six console apps that work with the same local Parquet orders file.
 
 - `dotnet-app`: .NET 10 app that can generate fake orders and aggregate them.
 - `dotnet-duckdb`: .NET 10 app that aggregates with the DuckDB engine.
 - `rust-aggregator`: Rust app that only aggregates an existing Parquet file.
 - `cpp-aggregator`: C++ app that only aggregates an existing Parquet file.
 - `node-aggregator`: Node.js 24+ app that only aggregates an existing Parquet file.
+- `clickhouse-aggregator`: .NET 10 app that starts ClickHouse in Docker, loads a temporary table, and does aggregation within clickhouse
 
 All aggregators read `Quantity`, `UnitPrice`, and `RegionId`, then print:
 
@@ -66,6 +67,12 @@ Install Node.js dependencies:
 cd .\node-aggregator
 npm install
 cd ..
+```
+
+Build the ClickHouse .NET app:
+
+```powershell
+dotnet build .\clickhouse-aggregator\ClickHouseAggregator.csproj -c Release
 ```
 
 ## Generate Data With .NET
@@ -155,6 +162,20 @@ node .\src\main.mjs --path ..\data\orders.parquet
 cd ..
 ```
 
+## Run The ClickHouse Aggregator (Docker Desktop)
+
+The ClickHouse app maps the repository `data` directory into ClickHouse `user_files`, creates a temporary table, inserts parquet rows into it, then runs the same region aggregation.
+
+```powershell
+dotnet run --project .\clickhouse-aggregator\ClickHouseAggregator.csproj -c Release
+```
+
+You can also pass a file path explicitly (must be under `.\data` so it is visible in the mapped container volume):
+
+```powershell
+dotnet run --project .\clickhouse-aggregator\ClickHouseAggregator.csproj -c Release -- --path .\data\orders.parquet
+```
+
 ## Test / Smoke Test
 
 There are no dedicated unit test projects yet. Use these commands to verify all apps end to end with a small Parquet file:
@@ -162,6 +183,7 @@ There are no dedicated unit test projects yet. Use these commands to verify all 
 ```powershell
 dotnet build .\dotnet-app\ParquetPerformance.csproj -c Release
 dotnet build .\dotnet-duckdb\dotnet-duckdb.csproj -c Release
+dotnet build .\clickhouse-aggregator\ClickHouseAggregator.csproj -c Release
 cd .\rust-aggregator
 cargo build --release
 cargo test
@@ -178,5 +200,6 @@ dotnet run --project .\dotnet-duckdb\dotnet-duckdb.csproj -c Release
 cd .\node-aggregator
 npm run aggregate
 cd ..
+dotnet run --project .\clickhouse-aggregator\ClickHouseAggregator.csproj -c Release -- --path .\data\orders.parquet
 Remove-Item .\data\orders.parquet
 ```
