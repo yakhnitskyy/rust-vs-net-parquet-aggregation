@@ -1,15 +1,27 @@
 # Parquet Performance
 
-This repository contains seven console apps and one browser app that work with the same local Parquet orders file.
+This repository is a comparative performance benchmark for evaluating how different programming languages and data-processing technologies read and aggregate data from Apache Parquet files. The primary goal is to identify fast, practical approaches for processing large local Parquet datasets with a consistent workload, schema, and output format across implementations.
 
-- `dotnet-app`: .NET 10 app that can generate fake orders and aggregate them.
-- `dotnet-duckdb`: .NET 10 app that aggregates with the DuckDB engine.
-- `rust-aggregator`: Rust app that only aggregates an existing Parquet file.
-- `cpp-aggregator`: C++ app that only aggregates an existing Parquet file.
-- `node-aggregator`: Node.js 24+ app that only aggregates an existing Parquet file.
-- `clickhouse-aggregator`: .NET 10 app that starts ClickHouse in Docker, loads a temporary table, and aggregates.
-- `python-aggregator`: Python app that aggregates with the Polars engine.
-- `web-aggregator`: Browser app that aggregates an uploaded Parquet file with DuckDB-WASM.
+For a concise presentation of the key findings, see [Parquet Processing Benchmark Findings](presentation/parquet-performance-findings.pdf).
+
+The benchmark uses a generated orders dataset and runs the same aggregation in each implementation: read the required columns from `data\orders.parquet`, calculate revenue as `Quantity * UnitPrice`, group by `RegionId`, and report elapsed time and throughput. Keeping the workload consistent makes it easier to compare language/runtime overhead, Parquet reader performance, vectorized execution engines, and embedded analytical databases.
+
+## Implementations
+
+Current implementations in this repository:
+
+| Folder | Language / Runtime | Main technology | Purpose |
+| --- | --- | --- | --- |
+| `dotnet-app` | C# / .NET 10 | Parquet.Net | Generates the shared fake orders dataset and provides a baseline .NET Parquet reader aggregation. |
+| `dotnet-duckdb` | C# / .NET 10 | DuckDB.NET / DuckDB | Runs the same aggregation through DuckDB's Parquet SQL engine from .NET. |
+| `rust-aggregator` | Rust | Apache Parquet crate + Rayon | Reads Parquet columns directly and aggregates row groups in parallel. |
+| `cpp-aggregator` | C++ | Apache Arrow with Parquet support | Native C++ Parquet aggregation using Arrow's columnar libraries. |
+| `node-aggregator` | Node.js 24+ | DuckDB Node API | Runs the aggregation through DuckDB from Node.js. |
+| `clickhouse-aggregator` | C# / .NET 10 + Docker | ClickHouse | Runs ClickHouse in Docker with the repository `data` folder mapped into the container, loads the Parquet data into a temporary table, and runs the aggregation there. |
+| `python-aggregator` | Python | Polars + PyArrow | Uses Python's columnar data ecosystem to aggregate Parquet data. |
+| `web-aggregator` | Browser JavaScript | DuckDB-WASM | Runs the aggregation in-browser against an uploaded Parquet file. |
+
+Potential future comparison targets include additional combinations such as Rust with Polars, Java with Apache Arrow/DataFusion-style engines, Go with native Parquet readers, and other embedded OLAP engines. These should use the same input file and aggregation contract to remain comparable.
 
 All aggregators read `Quantity`, `UnitPrice`, and `RegionId`, then print:
 

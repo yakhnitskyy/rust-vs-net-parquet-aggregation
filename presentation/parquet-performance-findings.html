@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Parquet Processing Benchmark Findings</title>
+  <style>
+    @page {
+      size: 13.333in 7.5in;
+      margin: 0;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: #18202f;
+      background: #f6f8fb;
+      font-family: "Aptos", "Segoe UI", Arial, sans-serif;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .page {
+      position: relative;
+      width: 13.333in;
+      height: 7.5in;
+      overflow: hidden;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.95), rgba(244,248,252,.98)),
+        radial-gradient(circle at 94% 12%, rgba(47, 128, 237, .08), transparent 28%);
+      page-break-after: always;
+      padding: .56in .66in .45in .66in;
+    }
+
+    .page:last-child {
+      page-break-after: auto;
+    }
+
+    .kicker {
+      color: #5b677a;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 12px 0 14px;
+      color: #101624;
+      font-size: 42px;
+      line-height: 1.02;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      color: #101624;
+      font-size: 24px;
+      line-height: 1.12;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 0 0 9px;
+      color: #101624;
+      font-size: 16px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0;
+      color: #465267;
+      font-size: 15px;
+      line-height: 1.42;
+    }
+
+    .lead {
+      max-width: 8.8in;
+      color: #344156;
+      font-size: 18px;
+      line-height: 1.35;
+    }
+
+    .grid-two {
+      display: grid;
+      grid-template-columns: 1.06fr .94fr;
+      gap: .35in;
+      margin-top: .35in;
+      align-items: stretch;
+    }
+
+    .grid-three {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: .24in;
+      margin-top: .34in;
+    }
+
+    .panel,
+    .card {
+      border: 1px solid #d9e0ea;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .88);
+      box-shadow: 0 18px 40px rgba(30, 48, 80, .08);
+    }
+
+    .panel {
+      padding: 22px;
+    }
+
+    .card {
+      min-height: 3.16in;
+      padding: 21px 20px;
+    }
+
+    .pill {
+      display: inline-block;
+      margin-bottom: 13px;
+      border-radius: 999px;
+      padding: 6px 10px;
+      color: #0b4f64;
+      background: #dff7f7;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .list {
+      display: grid;
+      gap: 13px;
+    }
+
+    .fact {
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      gap: 14px;
+      align-items: start;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e5eaf1;
+    }
+
+    .fact:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .label {
+      color: #6b7688;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .metric {
+      border-radius: 8px;
+      padding: 20px;
+      color: #ffffff;
+      background: linear-gradient(135deg, #0f6b7a, #173b63);
+    }
+
+    .metric .big {
+      display: block;
+      margin: 5px 0 7px;
+      font-size: 46px;
+      font-weight: 800;
+      line-height: .98;
+      letter-spacing: 0;
+    }
+
+    .metric .small {
+      color: rgba(255, 255, 255, .82);
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    .pipeline {
+      display: grid;
+      grid-template-columns: 1fr 42px 1fr 42px 1fr 42px 1fr;
+      align-items: center;
+      gap: 9px;
+      margin-top: 24px;
+    }
+
+    .step {
+      min-height: .82in;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #cfd9e6;
+      border-radius: 8px;
+      padding: 12px;
+      color: #142033;
+      background: #ffffff;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 800;
+      line-height: 1.18;
+    }
+
+    .arrow {
+      color: #287d8e;
+      font-size: 26px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .tag {
+      color: #287d8e;
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .card p {
+      font-size: 13px;
+      line-height: 1.34;
+      margin-bottom: 14px;
+    }
+
+    .card ul {
+      margin: 0;
+      padding: 0 0 0 17px;
+      color: #465267;
+      font-size: 12.5px;
+      line-height: 1.34;
+    }
+
+    .card li {
+      margin-bottom: 10px;
+    }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1.02fr .98fr;
+      gap: .28in;
+      margin-top: .25in;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border: 1px solid #dce3ee;
+      border-radius: 8px;
+      background: #fff;
+      font-size: 12.3px;
+    }
+
+    th {
+      color: #ffffff;
+      background: #173b63;
+      text-align: left;
+      font-weight: 800;
+    }
+
+    th,
+    td {
+      padding: 9px 10px;
+      vertical-align: top;
+      border-bottom: 1px solid #e5eaf1;
+    }
+
+    td {
+      color: #465267;
+      line-height: 1.28;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .bars {
+      display: grid;
+      gap: 13px;
+      margin-top: 15px;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 118px 1fr 72px;
+      align-items: center;
+      gap: 10px;
+      color: #354158;
+      font-size: 12.5px;
+      font-weight: 700;
+    }
+
+    .track {
+      height: 16px;
+      border-radius: 999px;
+      background: #e1e8f1;
+      overflow: hidden;
+    }
+
+    .bar {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #17a2a4, #2f80ed);
+    }
+
+    .not-measured {
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-left: 4px solid #d99a2b;
+      border-radius: 6px;
+      background: #fff5e6;
+      color: #614413;
+      font-size: 12.5px;
+      line-height: 1.34;
+    }
+
+    .takeaways {
+      display: grid;
+      gap: 8px;
+      margin-top: 13px;
+    }
+
+    .takeaway {
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: #eef7f7;
+      color: #294455;
+      font-size: 12.8px;
+      line-height: 1.3;
+      font-weight: 650;
+    }
+
+    .footer {
+      position: absolute;
+      left: .66in;
+      right: .66in;
+      bottom: .22in;
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      color: #7b8796;
+      font-size: 10.5px;
+      line-height: 1.25;
+    }
+
+    .source {
+      max-width: 8.8in;
+    }
+
+    .page-num {
+      white-space: nowrap;
+      font-weight: 800;
+    }
+  </style>
+</head>
+<body>
+  <section class="page">
+    <div class="kicker">Parquet Performance Benchmark</div>
+    <h1>DuckDB: Embedded Analytics At Parquet Speed</h1>
+    <p class="lead">The strongest practical finding is not only raw speed. DuckDB combines SQL ergonomics, direct Parquet scanning, vectorized execution, and in-process deployment without a separate database server.</p>
+
+    <div class="grid-two">
+      <div class="panel">
+        <div class="list">
+          <div class="fact">
+            <div class="label">What it is</div>
+            <p>An embedded analytical database that runs inside the application process and exposes APIs across .NET, Node.js, Python, R, C/C++, Go, Rust, Java, browser/WASM, and more.</p>
+          </div>
+          <div class="fact">
+            <div class="label">How it works</div>
+            <p>The benchmark queries <strong>orders.parquet</strong> directly, projects only <strong>Quantity</strong>, <strong>UnitPrice</strong>, and <strong>RegionId</strong>, then performs a SQL <strong>GROUP BY</strong> in-process.</p>
+          </div>
+          <div class="fact">
+            <div class="label">Why fast</div>
+            <p>DuckDB is built for OLAP scans and uses a columnar-vectorized execution engine, processing batches of values instead of row-by-row interpretation.</p>
+          </div>
+          <div class="fact">
+            <div class="label">Finding</div>
+            <p>In the current 1B-row results, DuckDB delivered the fastest recorded run via Node.js and stayed very close via .NET.</p>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="metric">
+          <span class="tag">Measured in this repo</span>
+          <span class="big">319M rows/sec</span>
+          <span class="small">DuckDB via Node.js processed 1,000,000,000 rows in 3.131 seconds. DuckDB via .NET processed the same file in 3.387 seconds at 295M rows/sec.</span>
+        </div>
+
+        <div class="pipeline">
+          <div class="step">orders.parquet</div>
+          <div class="arrow">></div>
+          <div class="step">DuckDB<br>parquet scan</div>
+          <div class="arrow">></div>
+          <div class="step">Vectorized<br>GROUP BY</div>
+          <div class="arrow">></div>
+          <div class="step">Region<br>revenue</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="source">Sources: repo <strong>Results.md</strong>; DuckDB official docs on in-process deployment, APIs, OLAP workloads, and vectorized execution.</div>
+      <div class="page-num">01 / 03</div>
+    </div>
+  </section>
+
+  <section class="page">
+    <div class="kicker">Technology Landscape</div>
+    <h1>The Alternative Engines: Different Strengths</h1>
+    <p class="lead">The comparison is not only a race. Each technology occupies a different layer of the analytical stack: embedded SQL engine, server OLAP database, columnar foundation, or DataFrame query engine.</p>
+
+    <div class="grid-three">
+      <article class="card">
+        <span class="pill">Server OLAP</span>
+        <h2>ClickHouse</h2>
+        <p>A high-performance, column-oriented SQL database for OLAP workloads over very large datasets.</p>
+        <ul>
+          <li>Best fit: persistent analytical service, concurrent users, operational database deployment.</li>
+          <li>Repo setup: Docker container with the repository <strong>data</strong> folder mapped into ClickHouse.</li>
+          <li>Benchmark caveat: separate container startup, data loading, and pure query timing.</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <span class="pill">Columnar Foundation</span>
+        <h2>Apache Arrow</h2>
+        <p>A multi-language toolbox and standardized in-memory columnar format for high-performance analytical systems.</p>
+        <ul>
+          <li>Best fit: native systems, interoperability, and low-level columnar processing.</li>
+          <li>Repo setup: C++ aggregator uses Apache Arrow with Parquet support.</li>
+          <li>Tradeoff: high control and speed, but more implementation effort than SQL.</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <span class="pill">DataFrame Engine</span>
+        <h2>Polars</h2>
+        <p>A Rust-based DataFrame library available from Python, R, and Node.js, with a vectorized query engine and lazy optimization.</p>
+        <ul>
+          <li>Best fit: data engineering, data science, and expressive DataFrame workflows.</li>
+          <li>Repo setup: Python aggregator uses Polars with PyArrow for Parquet processing.</li>
+          <li>Tradeoff: excellent productivity, but API style differs from SQL-oriented tools.</li>
+        </ul>
+      </article>
+    </div>
+
+    <div class="footer">
+      <div class="source">Sources: ClickHouse docs; Apache Arrow overview; Polars user guide; repo README and ClickHouse aggregator setup.</div>
+      <div class="page-num">02 / 03</div>
+    </div>
+  </section>
+
+  <section class="page">
+    <div class="kicker">Benchmark Interpretation</div>
+    <h1>What We Learned From The Benchmark</h1>
+
+    <div class="comparison">
+      <div>
+        <table>
+          <thead>
+            <tr>
+              <th>Technology</th>
+              <th>Best Fit</th>
+              <th>Strength</th>
+              <th>Tradeoff</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>DuckDB</strong></td>
+              <td>Local analytics over files</td>
+              <td>SQL, direct Parquet scan, very fast execution</td>
+              <td>Less suitable when a shared long-running service is required</td>
+            </tr>
+            <tr>
+              <td><strong>ClickHouse</strong></td>
+              <td>Production OLAP service</td>
+              <td>Scalable server-side analytics and operational DB features</td>
+              <td>Docker/server lifecycle and load path add complexity</td>
+            </tr>
+            <tr>
+              <td><strong>Apache Arrow</strong></td>
+              <td>Native columnar systems</td>
+              <td>Fast low-level columnar processing and interoperability</td>
+              <td>More code and engineering effort</td>
+            </tr>
+            <tr>
+              <td><strong>Polars</strong></td>
+              <td>DataFrame analytics</td>
+              <td>Productive API, lazy optimization, parallel execution</td>
+              <td>Performance depends on query shape and API usage</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="takeaways">
+          <div class="takeaway">DuckDB is the most impressive practical result: near-native scan speed with SQL ergonomics and no database server requirement.</div>
+          <div class="takeaway">ClickHouse is the stronger choice when the problem becomes a shared analytical service instead of a local file-processing task.</div>
+          <div class="takeaway">Arrow is the foundation for native columnar performance; Polars is the ergonomic DataFrame path.</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>1B-row throughput from Results.md</h2>
+        <p>Rows per second, same generated Parquet input and same region revenue aggregation.</p>
+        <div class="bars">
+          <div class="bar-row">
+            <div>DuckDB Node</div>
+            <div class="track"><div class="bar" style="width:100%"></div></div>
+            <div>319M</div>
+          </div>
+          <div class="bar-row">
+            <div>DuckDB .NET</div>
+            <div class="track"><div class="bar" style="width:92.4%"></div></div>
+            <div>295M</div>
+          </div>
+          <div class="bar-row">
+            <div>Rust Parquet</div>
+            <div class="track"><div class="bar" style="width:78.9%"></div></div>
+            <div>252M</div>
+          </div>
+          <div class="bar-row">
+            <div>C++ Arrow</div>
+            <div class="track"><div class="bar" style="width:75.9%"></div></div>
+            <div>242M</div>
+          </div>
+          <div class="bar-row">
+            <div>.NET Parquet</div>
+            <div class="track"><div class="bar" style="width:17.0%"></div></div>
+            <div>54M</div>
+          </div>
+        </div>
+
+        <div class="not-measured">
+          ClickHouse and Polars are described in the comparison, but are not included in this measured chart because matching 1B-row results were not captured in <strong>Results.md</strong>.
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="source">Sources: Results.md; DuckDB, ClickHouse, Apache Arrow, and Polars official documentation. Figures are local benchmark observations, not universal product rankings.</div>
+      <div class="page-num">03 / 03</div>
+    </div>
+  </section>
+</body>
+</html>
