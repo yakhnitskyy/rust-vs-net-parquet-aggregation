@@ -16,8 +16,8 @@ One command from the repository root:
 .\build-cpp-aggregator.ps1
 ```
 
-Note: if your repository path contains spaces, the script automatically creates a temporary junction under `C:\Users\yakhn\AppData\Local\Temp\opencode` so MinGW/vcpkg builds can proceed.
-By default, the script also clones vcpkg to `C:\Users\yakhn\AppData\Local\Temp\opencode\vcpkg` (no spaces, MinGW-safe).
+Note: if your repository path contains spaces, the script automatically creates a temporary junction under `C:\Users\$env:USERNAME\AppData\Local\Temp\opencode` so MinGW/vcpkg builds can proceed.
+By default, the script also clones vcpkg to `C:\Users\$env:USERNAME\AppData\Local\Temp\opencode\vcpkg` (no spaces, MinGW-safe).
 
 Optional examples:
 

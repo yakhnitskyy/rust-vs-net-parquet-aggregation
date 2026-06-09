@@ -21,7 +21,7 @@ function Resolve-WorkspaceRoot {
         return $resolved
     }
 
-    $tempRoot = "C:\Users\yakhn\AppData\Local\Temp\opencode"
+    $tempRoot = "C:\Users\$env:USERNAME\AppData\Local\Temp\opencode"
     if (-not (Test-Path -LiteralPath $tempRoot)) {
         throw "Temporary directory not found: $tempRoot"
     }
@@ -87,7 +87,7 @@ function Resolve-VcpkgRoot {
         return Validate-PathForTriplet -CandidatePath $full -Triplet $ActiveTriplet
     }
 
-    $local = "C:\Users\yakhn\AppData\Local\Temp\opencode\vcpkg"
+    $local = "C:\Users\{USER_NAME}\AppData\Local\Temp\opencode\vcpkg"
     if (-not (Test-Path -LiteralPath $local)) {
         git clone https://github.com/microsoft/vcpkg "$local"
     }

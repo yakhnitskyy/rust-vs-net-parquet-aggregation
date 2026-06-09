@@ -32,7 +32,7 @@
 
 ## Repo-Specific Gotchas
 - The C++ build script is the source of truth (`build-cpp-aggregator.ps1`), not manual CMake snippets.
-- Path-with-spaces handling for C++ is already built into the script: it creates a temp junction under `C:\Users\yakhn\AppData\Local\Temp\opencode`.
+- Path-with-spaces handling for C++ is already built into the script: it creates a temp junction under `C:\Users\$env:USERNAME\AppData\Local\Temp\opencode`.
 - For MinGW triplets, `vcpkg` path must not contain spaces (enforced by script).
 - C++ generator changes invalidate the existing build dir; the script deletes `cpp-aggregator\build` automatically when generator differs from cache.
 - `*.parquet` is gitignored at repo root; generated data files will not show up in commits.
