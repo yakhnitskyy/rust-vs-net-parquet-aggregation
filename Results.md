@@ -216,12 +216,12 @@ Throughput: 319,385,666 rows/sec
 Total       1,000,000,000 $1,381,244,602,465.79
 ```
 
-## .NET DuckDB Aggregator (1B)
+## .NET DuckDB Aggregator (1B, file source)
 
 Command:
 
 ```powershell
-dotnet run --project .\dotnet-duckdb\dotnet-duckdb.csproj -c Release -- --path .\data\orders.parquet
+dotnet run --project .\dotnet-duckdb\dotnet-duckdb.csproj -c Release -- --source file --path .\data\orders.parquet
 ```
 
 Summary:
@@ -230,4 +230,19 @@ Summary:
 Processed 1,000,000,000 rows in 00:00:03.3873785
 Throughput: 295,213,541 rows/sec
 Total       1,000,000,000 $1,381,244,602,465.79
+```
+
+## .NET DuckDB Aggregator (1B, memory source)
+
+Command:
+
+```powershell
+dotnet run --project .\dotnet-duckdb\dotnet-duckdb.csproj -c Release -- --source memory --path .\data\orders.parquet
+```
+
+Summary:
+
+```text
+Processed 1,000,000,000 rows in 00:00:01.1955577 (aggregation query after loading table into memory)
+Throughput: 836,429,726 rows/sec
 ```

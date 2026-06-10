@@ -13,7 +13,7 @@ Current implementations in this repository:
 | Folder | Language / Runtime | Main technology | Purpose |
 | --- | --- | --- | --- |
 | `dotnet-app` | C# / .NET 10 | Parquet.Net | Generates the shared fake orders dataset and provides a baseline .NET Parquet reader aggregation. |
-| `dotnet-duckdb` | C# / .NET 10 | DuckDB.NET / DuckDB | Runs the same aggregation through DuckDB's Parquet SQL engine from .NET. |
+| `dotnet-duckdb` | C# / .NET 10 | DuckDB.NET / DuckDB | Runs the same aggregation through DuckDB's Parquet SQL engine from .NET, either directly from Parquet or from a preloaded in-memory DuckDB table. |
 | `rust-aggregator` | Rust | Apache Parquet crate + Rayon | Reads Parquet columns directly and aggregates row groups in parallel. |
 | `cpp-aggregator` | C++ | Apache Arrow with Parquet support | Native C++ Parquet aggregation using Arrow's columnar libraries. |
 | `node-aggregator` | Node.js 24+ | DuckDB Node API | Runs the aggregation through DuckDB from Node.js. |
@@ -138,6 +138,18 @@ You can also pass a file path explicitly:
 dotnet run --project .\dotnet-duckdb\dotnet-duckdb.csproj -c Release -- --path .\data\orders.parquet
 ```
 
+The default source mode is `file`, which runs the aggregation query directly against the Parquet file with DuckDB `read_parquet`:
+
+```powershell
+dotnet run --project .\dotnet-duckdb\dotnet-duckdb.csproj -c Release -- --source file --path .\data\orders.parquet
+```
+
+Use `--source memory` to load the Parquet file into a DuckDB in-memory temp table before timing. The reported elapsed time excludes the preload and measures only the aggregation query over the in-memory table:
+
+```powershell
+dotnet run --project .\dotnet-duckdb\dotnet-duckdb.csproj -c Release -- --source memory --path .\data\orders.parquet
+```
+
 ## Run The Rust Aggregator
 
 The Rust app reads `data\orders.parquet` from the repository root when no path is supplied:
@@ -224,6 +236,7 @@ cd ..
 dotnet run --project .\dotnet-app\ParquetPerformance.csproj -c Release -- generate --rows 10000 --row-group-size 2500
 dotnet run --project .\dotnet-app\ParquetPerformance.csproj -c Release -- aggregate
 dotnet run --project .\dotnet-duckdb\dotnet-duckdb.csproj -c Release
+dotnet run --project .\dotnet-duckdb\dotnet-duckdb.csproj -c Release -- --source memory
 .\rust-aggregator\target\release\rust-aggregator.exe
 .\cpp-aggregator\build\cpp-aggregator.exe
 cd .\node-aggregator

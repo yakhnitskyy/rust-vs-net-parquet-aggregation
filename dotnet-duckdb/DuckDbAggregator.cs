@@ -4,15 +4,16 @@ using DuckDB.NET.Data;
 
 sealed class DuckDbAggregator
 {
-    public AggregationResult Aggregate(string fullPath, int regionCount)
+    private const string InMemoryTableName = "orders_memory";
+
+    public AggregationResult Aggregate(string fullPath, int regionCount, AggregationSource source)
     {
         int threadCount = Math.Max(1, Environment.ProcessorCount);
         long[] ordersByRegion = new long[regionCount];
         double[] revenueByRegion = new double[regionCount];
         long rowGroupCount = 0;
         long expectedRows = 0;
-
-        var stopwatch = Stopwatch.StartNew();
+        TimeSpan? loadElapsed = null;
 
         using var connection = new DuckDBConnection("DataSource=:memory:");
         connection.Open();
@@ -44,13 +45,34 @@ sealed class DuckDbAggregator
             }
         }
 
+        if (source == AggregationSource.Memory)
+        {
+            string loadSql = $$"""
+                CREATE TEMP TABLE {{InMemoryTableName}} AS
+                SELECT RegionId, Quantity, UnitPrice
+                FROM read_parquet('{{EscapeSqlString(fullPath)}}')
+                """;
+
+            var loadStopwatch = Stopwatch.StartNew();
+            ExecuteNonQuery(connection, loadSql);
+            loadStopwatch.Stop();
+            loadElapsed = loadStopwatch.Elapsed;
+        }
+
+        string sourceSql = source switch
+        {
+            AggregationSource.File => $"read_parquet('{EscapeSqlString(fullPath)}')",
+            AggregationSource.Memory => InMemoryTableName,
+            _ => throw new ArgumentOutOfRangeException(nameof(source), source, "Unknown aggregation source.")
+        };
+
         string aggregateSql = $$"""
             WITH source AS (
                 SELECT
                     CAST(RegionId AS INTEGER) % {{regionCount}} AS region_index,
                     CAST(Quantity AS BIGINT) AS quantity,
                     CAST(UnitPrice AS DOUBLE) AS unit_price
-                FROM read_parquet('{{EscapeSqlString(fullPath)}}')
+                FROM {{sourceSql}}
             )
             SELECT
                 region_index,
@@ -61,6 +83,7 @@ sealed class DuckDbAggregator
             ORDER BY region_index
             """;
 
+        var stopwatch = Stopwatch.StartNew();
         using (DbCommand aggregateCommand = connection.CreateCommand())
         {
             aggregateCommand.CommandText = aggregateSql;
@@ -90,10 +113,12 @@ sealed class DuckDbAggregator
 
         return new AggregationResult(
             FullPath: fullPath,
+            Source: source,
             FileSize: new FileInfo(fullPath).Length,
             ThreadCount: threadCount,
             RowGroupCount: rowGroupCount,
             ExpectedRows: expectedRows,
+            LoadElapsed: loadElapsed,
             OrdersByRegion: ordersByRegion,
             RevenueByRegion: revenueByRegion,
             RowsRead: rowsRead,
